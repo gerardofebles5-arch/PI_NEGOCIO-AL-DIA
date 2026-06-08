@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="(π)NAD - Sistema de Escaneo Contable">
+  <title>(π)NAD - Sistema de Escaneo Contable</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #936A31 0%, #512509 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      text-align: center;
+      color: white;
+      padding: 40px;
+    }
+    h1 {
+      font-size: 64px;
+      font-weight: bold;
+      margin: 0 0 24px 0;
+    }
+    h2 {
+      font-size: 28px;
+      font-weight: normal;
+      margin: 0 0 48px 0;
+      opacity: 0.8;
+    }
+    .status {
+      font-size: 18px;
+      margin: 24px 0;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+    }
+    .button {
+      background: white;
+      color: #936A31;
+      border: none;
+      padding: 16px 48px;
+      font-size: 20px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 24px;
+    }
+    .button:hover {
+      background: #f0f0f0;
+    }
+    .info {
+      margin-top: 48px;
+      font-size: 14px;
+      opacity: 0.7;
+      max-width: 600px;
+      line-height: 1.6;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>(π)NAD</h1>
+    <h2>Sistema de Escaneo Contable</h2>
+    <div class="status">
+      ✅ Aplicación desplegada exitosamente
+    </div>
+    <button class="button" onclick="alert('Funcionalidad en desarrollo')">Iniciar</button>
+    <div class="info">
+      <p><strong>Servicios Implementados:</strong></p>
+      <p>• Gmail Service (notificaciones por email)</p>
+      <p>• Drive Service (backup en Google Drive)</p>
+      <p>• Sheets Service (reportes en Google Sheets)</p>
+      <p>• Calendar Service (recordatorios en Google Calendar)</p>
+      <p>• Multi-Tenant Service (gestión de tenants y usuarios)</p>
+      <p>• Supabase Service (base de datos y storage)</p>
+      <br>
+      <p><strong>Infraestructura:</strong></p>
+      <p>• Firebase Hosting: https://pinad-scanning-system-cbde8.webapp</p>
+      <p>• Supabase Database + Storage configurado</p>
+      <p>• Supabase Edge Function (OCR) desplegada</p>
+      <p>• Google Workspace APIs habilitadas con credenciales OAuth</p>
+    </div>
+  </div>
+</body>
+</html>

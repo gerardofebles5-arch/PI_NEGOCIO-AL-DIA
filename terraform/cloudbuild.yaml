@@ -1,0 +1,90 @@
+# Cloud Build configuration for (π)NAD V6.0 - FASE_4 Implementation
+# CI/CD Pipeline con Cloud Build para Cloud Run
+
+steps:
+  # Step 1: Security scan with Trivy
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['run', '--rm', '-v', '/var/run/docker.sock:/var/run/docker.sock', '-v', '/workspace:/workspace', 'aquasec/trivy:latest', 'image', '--no-progress', '--exit-code', '1', '--severity', 'HIGH,CRITICAL', 'gcr.io/${_PROJECT_ID}/${_SERVICE_NAME}:${_SHORT_SHA}']
+  
+  # Step 2: Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/${_PROJECT_ID}/${_SERVICE_NAME}:${_SHORT_SHA}', '-t', 'gcr.io/${_PROJECT_ID}/${_SERVICE_NAME}:latest', '.']
+  
+  # Step 3: Push Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/${_PROJECT_ID}/${_SERVICE_NAME}:${_SHORT_SHA}']
+  
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/${_PROJECT_ID}/${_SERVICE_NAME}:latest']
+  
+  # Step 4: Run unit tests with pytest
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['run', '--rm', '-v', '${PWD}:/app', '-w', '/app', 'gcr.io/${_PROJECT_ID}/${_SERVICE_NAME}:${_SHORT_SHA}', 'python', '-m', 'pytest', 'tests/', '--cov=src', '--cov-report=xml', '--junitxml=test-results.xml']
+  
+  # Step 5: Upload test results to Cloud Storage
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args: ['cp', 'test-results.xml', 'gs://${_PROJECT_ID}-test-results/${_SHORT_SHA}/']
+  
+  # Step 6: Deploy to Cloud Run (if not a feature branch)
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        if [ "${_NO_DEPLOY}" != "true" ]; then
+          gcloud run deploy ${_SERVICE_NAME} \
+            --image gcr.io/${_PROJECT_ID}/${_SERVICE_NAME}:${_SHORT_SHA} \
+            --platform managed \
+            --region ${_REGION} \
+            --allow-unauthenticated \
+            --set-env-vars PROJECT_ID=${_PROJECT_ID},ENVIRONMENT=${_ENVIRONMENT},REGION=${_REGION},GOOGLE_CLOUD_PROJECT=${_PROJECT_ID} \
+            --memory 1Gi \
+            --cpu 2 \
+            --max-instances 100 \
+            --min-instances 0 \
+            --concurrency 80 \
+            --timeout 300s \
+            --service-account ${_SERVICE_ACCOUNT} \
+            --labels app=pinad,version=${_SHORT_SHA},environment=${_ENVIRONMENT}
+        fi
+  
+  # Step 7: Integration tests after deployment
+  - name: 'gcr.io/cloud-builders/curl'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        if [ "${_NO_DEPLOY}" != "true" ]; then
+          sleep 30
+          SERVICE_URL=$(gcloud run services describe ${_SERVICE_NAME} --region ${_REGION} --format='value(status.url)')
+          curl -f ${SERVICE_URL}/api/v1/health || exit 1
+        fi
+  
+  # Step 8: Notify deployment status via Pub/Sub
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud pubsub topics publish ${_NOTIFICATION_TOPIC} \
+          --message="{\"status\":\"success\",\"service\":\"${_SERVICE_NAME}\",\"sha\":\"${_SHORT_SHA}\",\"environment\":\"${_ENVIRONMENT}\"}" \
+          --attribute=source=cloudbuild
+
+timeout: '2400s'
+
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+  env:
+    - 'CLOUDSDK_RUN_REGION=${_REGION}'
+
+substitutions:
+  _PROJECT_ID: 'pinad-project'
+  _REGION: 'us-central1'
+  _ENVIRONMENT: 'production'
+  _SERVICE_NAME: 'pinad-api'
+  _REVISION: 'latest'
+  _SHORT_SHA: 'latest'
+  _NO_DEPLOY: 'false'
+  _SERVICE_ACCOUNT: 'pinad-service-account@${_PROJECT_ID}.iam.gserviceaccount.com'
+  _NOTIFICATION_TOPIC: 'deployment-notifications'

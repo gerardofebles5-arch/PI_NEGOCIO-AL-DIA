@@ -1,0 +1,59 @@
+# Cloud Build configuration for Terraform CI/CD
+
+steps:
+  # Initialize Terraform
+  - name: 'hashicorp/terraform:1.5'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd ${_TERRAFORM_DIR}
+        terraform init -backend-config="bucket=pinad-terraform-state" -backend-config="prefix=terraform/state/${_ENVIRONMENT}"
+  
+  # Terraform plan
+  - name: 'hashicorp/terraform:1.5'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd ${_TERRAFORM_DIR}
+        terraform plan -out=tfplan -var="project_id=${_PROJECT_ID}" -var="region=${_REGION}" -var="environment=${_ENVIRONMENT}"
+  
+  # Terraform apply (only for main/prod branches)
+  - name: 'hashicorp/terraform:1.5'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd ${_TERRAFORM_DIR}
+        if [ "${_ENVIRONMENT}" = "production" ] || [ "${_ENVIRONMENT}" = "staging" ]; then
+          terraform apply -auto-approve tfplan
+        else
+          echo "Skipping terraform apply for ${_ENVIRONMENT} environment"
+        fi
+  
+  # Terraform output
+  - name: 'hashicorp/terraform:1.5'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd ${_TERRAFORM_DIR}
+        terraform output -json > terraform-output.json
+  
+  # Upload Terraform output to Cloud Storage
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args: ['cp', '${_TERRAFORM_DIR}/terraform-output.json', 'gs://${_PROJECT_ID}-terraform-outputs/${_ENVIRONMENT}/terraform-output-${_SHORT_SHA}.json']
+  
+timeout: '1800s'
+
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _PROJECT_ID: 'pinad-project'
+  _REGION: 'us-central1'
+  _ENVIRONMENT: 'production'
+  _TERRAFORM_DIR: 'terraform'
+  _SHORT_SHA: 'latest'

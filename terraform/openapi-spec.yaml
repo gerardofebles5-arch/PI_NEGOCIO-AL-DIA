@@ -1,0 +1,422 @@
+openapi: 3.0.0
+info:
+  title: (π)NAD API
+  version: 6.0.0
+  description: API REST para (π)NAD - Contabilidad Automatizada con Google Cloud
+  contact:
+    name: Pi Administración y Asesoría
+    email: support@piadmin.com
+
+servers:
+  - url: https://pinad-gateway-prod-{{REGION}}.gateway.cloud.goog
+    description: Production Server
+  - url: https://pinad-gateway-dev-{{REGION}}.gateway.cloud.goog
+    description: Development Server
+
+security:
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: API Key para autenticación
+
+paths:
+  /api/v1/health:
+    get:
+      summary: Health check
+      operationId: healthCheck
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  version:
+                    type: string
+                    example: 6.0.0
+                  phase:
+                    type: string
+                    example: FASE_3_INTERFACES
+
+  /api/v1/auth/login:
+    post:
+      summary: Iniciar sesión
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                      user:
+                        $ref: '#/components/schemas/User'
+        '401':
+          description: Credenciales inválidas
+
+  /api/v1/auth/register:
+    post:
+      summary: Registrar usuario
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - name
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Usuario registrado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/User'
+
+  /api/v1/documents:
+    get:
+      summary: Listar documentos
+      operationId: listDocuments
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, processing, completed, failed]
+            default: all
+      responses:
+        '200':
+          description: Lista de documentos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      documents:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Document'
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+
+    post:
+      summary: Cargar documento
+      operationId: uploadDocument
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - name
+                - type
+              properties:
+                file:
+                  type: string
+                  format: binary
+                name:
+                  type: string
+                type:
+                  type: string
+                  enum: [invoice, receipt, report_z, credit_note, debit_note, other]
+      responses:
+        '201':
+          description: Documento cargado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Document'
+
+  /api/v1/documents/{documentId}:
+    get:
+      summary: Obtener detalles de documento
+      operationId: getDocument
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalles del documento
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Document'
+
+    delete:
+      summary: Eliminar documento
+      operationId: deleteDocument
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Documento eliminado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /api/v1/ocr/process:
+    post:
+      summary: Procesar documento con OCR avanzado
+      operationId: processOCR
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - documentId
+                - template
+              properties:
+                documentId:
+                  type: string
+                template:
+                  type: string
+                  enum: [banesco, mercantil, provincial, general]
+                options:
+                  type: object
+                  properties:
+                    quality:
+                      type: string
+                      enum: [low, medium, high]
+                      default: high
+                    autoCorrect:
+                      type: boolean
+                      default: true
+      responses:
+        '200':
+          description: Documento procesado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      ocrData:
+                        type: object
+                      confidence:
+                        type: number
+                      processedAt:
+                        type: string
+                        format: date-time
+
+  /api/v1/accounting/financial-statements:
+    get:
+      summary: Obtener estados financieros
+      operationId: getFinancialStatements
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Estados financieros
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      balanceSheet:
+                        type: object
+                      incomeStatement:
+                        type: object
+                      cashFlow:
+                        type: object
+
+  /api/v1/tax/calculate:
+    post:
+      summary: Calcular impuestos
+      operationId: calculateTax
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - taxType
+                - period
+              properties:
+                taxType:
+                  type: string
+                  enum: [iva, islr, municipal]
+                period:
+                  type: string
+                  format: date
+      responses:
+        '200':
+          description: Cálculo de impuestos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      taxAmount:
+                        type: number
+                      details:
+                        type: object
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        photoUrl:
+          type: string
+          format: uri
+        createdAt:
+          type: string
+          format: date-time
+        lastLoginAt:
+          type: string
+          format: date-time
+
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [invoice, receipt, report_z, credit_note, debit_note, other]
+        status:
+          type: string
+          enum: [processing, completed, failed]
+        createdAt:
+          type: string
+          format: date-time
+        processedAt:
+          type: string
+          format: date-time
+        url:
+          type: string
+          format: uri
+        ocrConfidence:
+          type: number
+          format: float
+        extractedData:
+          type: object
+        userId:
+          type: string

@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>(π)NAD - Sistema de Contabilidad</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins Light', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #be882e 0%, #873c20 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            font-size: 64px;
+            font-weight: bold;
+            color: #d9b158;
+            margin-bottom: 10px;
+            font-family: 'League Gothic', Arial, sans-serif;
+        }
+
+        .subtitle {
+            font-size: 24px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .status {
+            background: #f4e0ab;
+            color: #873c20;
+            padding: 10px 20px;
+            border-radius: 10px;
+            display: inline-block;
+            font-weight: bold;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: #d9b158;
+        }
+
+        .tab.active {
+            color: #d9b158;
+            border-bottom-color: #d9b158;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #be882e 0%, #873c20 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .components-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .component-card {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .component-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .component-card.active {
+            background: #f4e0ab;
+            border: 2px solid #be882e;
+        }
+
+        .component-card.inactive {
+            background: #ffebee;
+            border: 2px solid #c62828;
+        }
+
+        .component-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .component-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .component-status {
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #d9b158;
+        }
+
+        .button {
+            background: #be882e;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background 0.3s;
+            width: 100%;
+        }
+
+        .button:hover {
+            background: #873c20;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #d9b158;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .log-container {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+        }
+
+        .log-time {
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">(π)NAD</div>
+            <div class="subtitle">Sistema de Contabilidad Automatizada</div>
+            <div class="status">🏠 Modo Local Activo</div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
+            <button class="tab" onclick="showTab('components')">⚙️ Componentes</button>
+            <button class="tab" onclick="showTab('scanner')">📷 Escáner</button>
+            <button class="tab" onclick="showTab('forms')">📝 Formularios</button>
+            <button class="tab" onclick="showTab('logs')">📋 Logs</button>
+        </div>
+
+        <div id="dashboard" class="tab-content active">
+            <div class="dashboard-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="clients-count">0</div>
+                    <div class="stat-label">Clientes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="transactions-count">0</div>
+                    <div class="stat-label">Transacciones</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="documents-count">0</div>
+                    <div class="stat-label">Documentos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="components-count">20</div>
+                    <div class="stat-label">Componentes Activos</div>
+                </div>
+            </div>
+
+            <button class="button" onclick="refreshDashboard()">🔄 Actualizar Dashboard</button>
+            <div class="loading" id="dashboard-loading">
+                <div class="spinner"></div>
+                <p>Cargando datos...</p>
+            </div>
+        </div>
+
+        <div id="components" class="tab-content">
+            <h3>Componentes Google-Native</h3>
+            <div class="components-grid" id="components-grid">
+                <!-- Components will be loaded here -->
+            </div>
+            <button class="button" onclick="loadComponents()" style="margin-top: 20px;">🔄 Cargar Componentes</button>
+        </div>
+
+        <div id="scanner" class="tab-content">
+            <h3>Escáner de Documentos Avanzado</h3>
+            
+            <div class="form-group">
+                <label>Opción 1: Cargar imagen desde archivo</label>
+                <input type="file" id="file-input" accept="image/*" onchange="loadFileImage(event)" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;">
+            </div>
+            
+            <div class="form-group" style="text-align: center; margin: 20px 0;">
+                <span style="color: #666;">— O —</span>
+            </div>
+            
+            <div class="form-group">
+                <label for="camera-select">Opción 2: Usar cámara</label>
+                <select id="camera-select">
+                    <option value="">Cargando cámaras...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <video id="video" autoplay playsinline style="width: 100%; max-width: 640px; border-radius: 10px;"></video>
+            </div>
+            <div class="form-group">
+                <canvas id="canvas" style="display: none;"></canvas>
+            </div>
+            <div class="form-group">
+                <img id="captured-image" style="width: 100%; max-width: 640px; border-radius: 10px; display: none;">
+            </div>
+            <div class="form-group">
+                <canvas id="overlay-canvas" style="display: none; position: absolute; border: 2px solid #d9b158; border-radius: 10px;"></canvas>
+            </div>
+            
+            <div class="form-group">
+                <label>Opciones Avanzadas de OCR</label>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <label style="flex: 1;">
+                        <input type="checkbox" id="preprocess" checked> Preprocesar imagen
+                    </label>
+                    <label style="flex: 1;">
+                        <input type="checkbox" id="show-bounding-boxes" checked> Mostrar bounding boxes
+                    </label>
+                    <label style="flex: 1;">
+                        <input type="checkbox" id="binarize"> Binarizar imagen
+                    </label>
+                    <label style="flex: 1;">
+                        <input type="checkbox" id="denoise"> Reducir ruido
+                    </label>
+                    <label style="flex: 1;">
+                        <input type="checkbox" id="deskew"> Corregir inclinación
+                    </label>
+                    <label style="flex: 1;">
+                        <input type="checkbox" id="upscale"> Aumentar resolución
+                    </label>
+                    <label style="flex: 1;">
+                        <input type="checkbox" id="use-cache" checked> Usar cache
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Configuración Avanzada</label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                    <div>
+                        <label for="upscale-factor">Factor de upscale:</label>
+                        <input type="number" id="upscale-factor" value="2" min="1" max="4" step="0.5" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px;">
+                    </div>
+                    <div>
+                        <label for="threshold">Umbral binarización:</label>
+                        <input type="number" id="threshold" value="127" min="0" max="255" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px;">
+                    </div>
+                    <div>
+                        <label for="detail">Nivel de detalle:</label>
+                        <input type="number" id="detail" value="1" min="0" max="1" step="1" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px;">
+                    </div>
+                    <div>
+                        <label for="width-ths">Umbral ancho:</label>
+                        <input type="number" id="width-ths" value="0.7" min="0" max="1" step="0.1" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px;">
+                    </div>
+                    <div>
+                        <label for="height-ths">Umbral alto:</label>
+                        <input type="number" id="height-ths" value="0.7" min="0" max="1" step="0.1" style="width: 100%; padding: 8px; border: 2px solid #e0e0e0; border-radius: 6px;">
+                    </div>
+                    <div>
+                        <label for="paragraph">Modo párrafo:</label>
+                        <input type="checkbox" id="paragraph" checked style="margin-top: 5px;">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="language-select">Idiomas</label>
+                <select id="language-select" multiple style="height: 80px;">
+                    <option value="es" selected>Español</option>
+                    <option value="en" selected>Inglés</option>
+                    <option value="pt">Portugués</option>
+                    <option value="fr">Francés</option>
+                    <option value="de">Alemán</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <button class="button" onclick="startCamera()">📷 Iniciar Cámara</button>
+                <button class="button" onclick="captureImage()" style="margin-top: 10px;">📸 Capturar Documento</button>
+                <button class="button" onclick="processOCR()" style="margin-top: 10px;">🔍 Procesar OCR Avanzado</button>
+                <button class="button" onclick="exportResults()" style="margin-top: 10px;">📥 Exportar Resultados</button>
+            </div>
+            <div class="result" id="ocr-result"></div>
+        </div>
+
+        <div id="forms" class="tab-content">
+            <h3>Formulario de Cliente</h3>
+            <form id="client-form" onsubmit="submitClient(event)">
+                <div class="form-group">
+                    <label for="client-name">Nombre del Cliente</label>
+                    <input type="text" id="client-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="client-rif">RIF</label>
+                    <input type="text" id="client-rif" required>
+                </div>
+                <div class="form-group">
+                    <label for="client-email">Email</label>
+                    <input type="email" id="client-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="client-phone">Teléfono</label>
+                    <input type="tel" id="client-phone">
+                </div>
+                <button type="submit" class="button">💾 Guardar Cliente</button>
+            </form>
+            <div class="result" id="form-result"></div>
+        </div>
+
+        <div id="logs" class="tab-content">
+            <h3>Logs del Sistema</h3>
+            <button class="button" onclick="loadLogs()" style="margin-bottom: 20px;">📥 Cargar Logs</button>
+            <div class="log-container" id="log-container">
+                <div class="log-entry">No hay logs cargados</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+        let videoStream = null;
+
+        function showTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+
+            // Load data based on tab
+            if (tabId === 'dashboard') {
+                refreshDashboard();
+            } else if (tabId === 'components') {
+                loadComponents();
+            } else if (tabId === 'scanner') {
+                loadCameras();
+            }
+        }
+
+        async function loadCameras() {
+            const select = document.getElementById('camera-select');
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                select.innerHTML = '';
+                if (videoDevices.length === 0) {
+                    select.innerHTML = '<option value="">No se detectaron cámaras</option>';
+                } else {
+                    videoDevices.forEach((device, index) => {
+                        const option = document.createElement('option');
+                        option.value = device.deviceId;
+                        option.text = device.label || `Cámara ${index + 1}`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                select.innerHTML = '<option value="">No se detectaron cámaras</option>';
+            }
+        }
+
+        function loadFileImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const capturedImage = document.getElementById('captured-image');
+                capturedImage.src = e.target.result;
+                capturedImage.style.display = 'block';
+                
+                // También guardar en canvas para OCR
+                const canvas = document.getElementById('canvas');
+                const img = new Image();
+                img.onload = function() {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    canvas.getContext('2d').drawImage(img, 0, 0);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function startCamera() {
+            const deviceId = document.getElementById('camera-select').value;
+            const video = document.getElementById('video');
+            
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+            }
+
+            try {
+                const constraints = {
+                    video: deviceId ? { deviceId: { exact: deviceId } } : true
+                };
+                videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = videoStream;
+            } catch (error) {
+                alert('Error al acceder a la cámara: ' + error.message);
+            }
+        }
+
+        function captureImage() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const capturedImage = document.getElementById('captured-image');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            capturedImage.src = canvas.toDataURL('image/png');
+            capturedImage.style.display = 'block';
+        }
+
+        async function processOCR() {
+            const canvas = document.getElementById('canvas');
+            const result = document.getElementById('ocr-result');
+            
+            if (!canvas.width || !canvas.height) {
+                result.style.display = 'block';
+                result.className = 'result error';
+                result.innerHTML = '❌ Primero captura una imagen';
+                return;
+            }
+
+            result.style.display = 'block';
+            result.className = 'result info';
+            result.innerHTML = '⏳ Procesando OCR avanzado...';
+
+            try {
+                const imageData = canvas.toDataURL('image/png');
+                const preprocess = document.getElementById('preprocess').checked;
+                const showBoundingBoxes = document.getElementById('show-bounding-boxes').checked;
+                
+                // Obtener idiomas seleccionados
+                const languageSelect = document.getElementById('language-select');
+                const languages = Array.from(languageSelect.selectedOptions).map(option => option.value);
+                
+                const response = await fetch(`${API_BASE}/api/ocr`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        image: imageData,
+                        options: {
+                            preprocess: preprocess,
+                            languages: languages,
+                            binarize: document.getElementById('binarize').checked,
+                            denoise: document.getElementById('denoise').checked,
+                            deskew: document.getElementById('deskew').checked,
+                            upscale: document.getElementById('upscale').checked,
+                            upscale_factor: parseInt(document.getElementById('upscale-factor').value) || 2,
+                            threshold: parseInt(document.getElementById('threshold').value) || 127,
+                            use_cache: document.getElementById('use-cache').checked,
+                            paragraph: document.getElementById('paragraph').checked,
+                            detail: parseInt(document.getElementById('detail').value) || 1,
+                            width_ths: parseFloat(document.getElementById('width-ths').value) || 0.7,
+                            height_ths: parseFloat(document.getElementById('height-ths').value) || 0.7
+                        }
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Guardar resultados para exportación
+                    window.currentOCRResults = data;
+                    
+                    // Mostrar bounding boxes si está habilitado
+                    if (showBoundingBoxes && data.bounding_boxes) {
+                        drawBoundingBoxes(data.bounding_boxes);
+                    }
+                    
+                    let html = `
+                        <strong>✅ OCR Avanzado Completado</strong><br><br>
+                        <div style="background: #f4e0ab; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                            <strong>Tipo de Documento:</strong> ${data.document_type || 'Desconocido'}<br>
+                            <strong>Confianza Promedio:</strong> ${(data.average_confidence * 100).toFixed(2)}%<br>
+                            <strong>Detecciones:</strong> ${data.detections}<br>
+                            <strong>Idiomas:</strong> ${data.languages.join(', ')}<br>
+                            <strong>Preprocesamiento:</strong> ${data.preprocessing_applied ? 'Sí' : 'No'}<br>
+                            <strong>Desde Cache:</strong> ${data.cached ? 'Sí' : 'No'}
+                        </div>
+                    `;
+                    
+                    if (data.structured_data && Object.keys(data.structured_data).length > 0) {
+                        html += `
+                            <div style="background: #e8f5e9; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                <strong>📊 Datos Estructurados:</strong><br>
+                        `;
+                        for (const [key, value] of Object.entries(data.structured_data)) {
+                            html += `<strong>${key}:</strong> ${Array.isArray(value) ? value.join(', ') : value}<br>`;
+                        }
+                        html += `</div>`;
+                    }
+                    
+                    if (data.validation) {
+                        html += `
+                            <div style="background: ${data.validation.valid ? '#e8f5e9' : '#ffebee'}; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                                <strong>✅ Validación:</strong> ${data.validation.valid ? 'Válido' : 'Inválido'}<br>
+                        `;
+                        if (data.validation.errors.length > 0) {
+                            html += `<strong>Errores:</strong> ${data.validation.errors.join(', ')}<br>`;
+                        }
+                        if (data.validation.warnings.length > 0) {
+                            html += `<strong>Advertencias:</strong> ${data.validation.warnings.join(', ')}<br>`;
+                        }
+                        html += `</div>`;
+                    }
+                    
+                    html += `
+                        <div style="background: #f5f5f5; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                            <strong>📝 Texto Extraído:</strong><br>
+                            <pre style="white-space: pre-wrap; margin-top: 10px;">${data.text || 'No se detectó texto'}</pre>
+                        </div>
+                        
+                        <div style="background: #f5f5f5; padding: 15px; border-radius: 10px;">
+                            <strong>📋 Líneas Detectadas:</strong><br>
+                            <ul style="margin-top: 10px;">
+                    `;
+                    
+                    data.lines.forEach((line, index) => {
+                        html += `<li>${line} (Confianza: ${(data.confidence_scores[index] * 100).toFixed(2)}%)</li>`;
+                    });
+                    
+                    html += `</ul></div>`;
+                    
+                    result.className = 'result success';
+                    result.innerHTML = html;
+                } else {
+                    throw new Error('Error en OCR');
+                }
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = '❌ Error al procesar OCR: ' + error.message;
+            }
+        }
+        
+        function drawBoundingBoxes(boundingBoxes) {
+            const canvas = document.getElementById('canvas');
+            const overlayCanvas = document.getElementById('overlay-canvas');
+            const capturedImage = document.getElementById('captured-image');
+            
+            overlayCanvas.width = canvas.width;
+            overlayCanvas.height = canvas.height;
+            overlayCanvas.style.width = capturedImage.style.width;
+            overlayCanvas.style.height = capturedImage.style.height;
+            overlayCanvas.style.display = 'block';
+            overlayCanvas.style.position = 'absolute';
+            overlayCanvas.style.top = capturedImage.offsetTop + 'px';
+            overlayCanvas.style.left = capturedImage.offsetLeft + 'px';
+            
+            const ctx = overlayCanvas.getContext('2d');
+            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+            
+            boundingBoxes.forEach((box, index) => {
+                ctx.beginPath();
+                ctx.moveTo(box[0][0], box[0][1]);
+                ctx.lineTo(box[1][0], box[1][1]);
+                ctx.lineTo(box[2][0], box[2][1]);
+                ctx.lineTo(box[3][0], box[3][1]);
+                ctx.closePath();
+                
+                ctx.strokeStyle = '#d9b158';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                ctx.fillStyle = 'rgba(217, 177, 88, 0.2)';
+                ctx.fill();
+            });
+        }
+        
+        function exportResults() {
+            if (!window.currentOCRResults) {
+                alert('No hay resultados para exportar. Primero procesa una imagen con OCR.');
+                return;
+            }
+            
+            const data = window.currentOCRResults;
+            const exportFormat = prompt('Selecciona formato de exportación:\n1. JSON\n2. CSV\n3. TXT\n\nIngresa número (1-3):', '1');
+            
+            if (exportFormat === '1') {
+                // JSON
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'ocr_resultados.json';
+                a.click();
+            } else if (exportFormat === '2') {
+                // CSV
+                let csv = 'Línea,Confianza\n';
+                data.lines.forEach((line, index) => {
+                    csv += `"${line}",${(data.confidence_scores[index] * 100).toFixed(2)}\n`;
+                });
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'ocr_resultados.csv';
+                a.click();
+            } else if (exportFormat === '3') {
+                // TXT
+                let txt = `Tipo de Documento: ${data.document_type}\n`;
+                txt += `Confianza Promedio: ${(data.average_confidence * 100).toFixed(2)}%\n`;
+                txt += `Detecciones: ${data.detections}\n\n`;
+                txt += `Texto Extraído:\n${data.text}\n\n`;
+                txt += `Datos Estructurados:\n${JSON.stringify(data.structured_data, null, 2)}\n`;
+                const blob = new Blob([txt], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'ocr_resultados.txt';
+                a.click();
+            }
+        }
+
+        async function refreshDashboard() {
+            const loading = document.getElementById('dashboard-loading');
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/health`);
+                const data = await response.json();
+                
+                if (data.system_status) {
+                    document.getElementById('clients-count').textContent = data.system_status.clients_count || 0;
+                    document.getElementById('transactions-count').textContent = data.system_status.transactions_count || 0;
+                    document.getElementById('documents-count').textContent = data.system_status.documents_count || 0;
+                    
+                    const activeComponents = Object.values(data.system_status.google_native_components || {}).filter(v => v).length;
+                    document.getElementById('components-count').textContent = activeComponents;
+                }
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        async function loadComponents() {
+            const grid = document.getElementById('components-grid');
+            grid.innerHTML = '<div class="loading" style="display:block"><div class="spinner"></div><p>Cargando componentes...</p></div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/health`);
+                const data = await response.json();
+                
+                if (data.system_status && data.system_status.google_native_components) {
+                    grid.innerHTML = '';
+                    const components = data.system_status.google_native_components;
+                    
+                    for (const [name, active] of Object.entries(components)) {
+                        const card = document.createElement('div');
+                        card.className = `component-card ${active ? 'active' : 'inactive'}`;
+                        card.innerHTML = `
+                            <div class="component-icon">${active ? '✅' : '❌'}</div>
+                            <div class="component-name">${name}</div>
+                            <div class="component-status">${active ? 'Activo' : 'Inactivo'}</div>
+                        `;
+                        grid.appendChild(card);
+                    }
+                }
+            } catch (error) {
+                grid.innerHTML = '<div class="result error">Error cargando componentes</div>';
+            }
+        }
+
+        async function submitClient(event) {
+            event.preventDefault();
+            const result = document.getElementById('form-result');
+            result.style.display = 'none';
+
+            const clientData = {
+                name: document.getElementById('client-name').value,
+                rif: document.getElementById('client-rif').value,
+                email: document.getElementById('client-email').value,
+                phone: document.getElementById('client-phone').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/api/clients`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(clientData)
+                });
+
+                if (response.ok) {
+                    result.style.display = 'block';
+                    result.className = 'result success';
+                    result.innerHTML = '✅ Cliente guardado exitosamente';
+                    document.getElementById('client-form').reset();
+                    refreshDashboard();
+                } else {
+                    throw new Error('Error saving client');
+                }
+            } catch (error) {
+                result.style.display = 'block';
+                result.className = 'result error';
+                result.innerHTML = '❌ Error al guardar cliente. Asegúrate de que el backend esté ejecutándose.';
+            }
+        }
+
+        async function loadLogs() {
+            const container = document.getElementById('log-container');
+            container.innerHTML = '<div class="log-entry">Cargando logs...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/logs`);
+                if (response.ok) {
+                    const logs = await response.json();
+                    container.innerHTML = logs.map(log => 
+                        `<div class="log-entry"><span class="log-time">[${log.time}]</span> ${log.message}</div>`
+                    ).join('');
+                } else {
+                    container.innerHTML = '<div class="log-entry">No se pudieron cargar los logs</div>';
+                }
+            } catch (error) {
+                container.innerHTML = '<div class="log-entry">Error de conexión al cargar logs</div>';
+            }
+        }
+
+        // Auto-refresh dashboard every 30 seconds
+        setInterval(refreshDashboard, 30000);
+
+        // Initial load
+        refreshDashboard();
+    </script>
+</body>
+</html>

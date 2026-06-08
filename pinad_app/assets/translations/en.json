@@ -1,0 +1,88 @@
+{
+  "app_name": "(π)NAD",
+  "app_subtitle": "Automated Accounting",
+  
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "forgot_password": "Forgot password?",
+    "no_account": "Don't have an account?",
+    "have_account": "Already have an account?",
+    "sign_in_google": "Continue with Google",
+    "welcome": "Welcome",
+    "login_success": "Login successful",
+    "login_error": "Login error",
+    "register_success": "Registration successful",
+    "register_error": "Registration error"
+  },
+  
+  "dashboard": {
+    "home": "Home",
+    "documents": "Documents",
+    "accounting": "Accounting",
+    "reports": "Reports",
+    "settings": "Settings",
+    "upload_document": "Upload Document",
+    "recent_documents": "Recent Documents",
+    "metrics": {
+      "revenue": "Revenue",
+      "expenses": "Expenses",
+      "documents_count": "Documents",
+      "clients": "Clients"
+    }
+  },
+  
+  "documents": {
+    "upload": "Upload Document",
+    "processing": "Processing",
+    "completed": "Completed",
+    "failed": "Failed",
+    "invoice": "Invoice",
+    "receipt": "Receipt",
+    "report_z": "Z Report"
+  },
+  
+  "accounting": {
+    "general_ledger": "General Ledger",
+    "balance_sheet": "Balance Sheet",
+    "income_statement": "Income Statement",
+    "cash_flow": "Cash Flow"
+  },
+  
+  "reports": {
+    "iva": "VAT Report",
+    "islr": "Income Tax Report",
+    "purchases_book": "Purchases Book",
+    "sales_book": "Sales Book",
+    "export": "Export"
+  },
+  
+  "settings": {
+    "profile": "Profile",
+    "notifications": "Notifications",
+    "theme": "Theme",
+    "language": "Language",
+    "dark_mode": "Dark Mode",
+    "light_mode": "Light Mode",
+    "system_mode": "System"
+  },
+  
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No"
+  }
+}

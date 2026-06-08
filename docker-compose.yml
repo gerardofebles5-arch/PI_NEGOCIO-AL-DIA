@@ -1,0 +1,144 @@
+version: '3.8'
+
+services:
+  # Aplicación principal
+  app:
+    build: .
+    container_name: pinad-app
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    environment:
+      - DATABASE_URL=postgresql://pinad_user:pinad_password@db:5432/pinad_db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - GCS_BUCKET_NAME=pinad-storage
+      - JWT_SECRET_KEY=your_jwt_secret_key_here
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+      - ./temp:/app/temp
+      - ./exports:/app/exports
+    depends_on:
+      - db
+      - redis
+    networks:
+      - pinad-network
+    restart: unless-stopped
+
+  # Worker de Celery
+  celery-worker:
+    build: .
+    container_name: pinad-celery-worker
+    command: celery -A src.tasks.celery_tasks worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://pinad_user:pinad_password@db:5432/pinad_db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+      - ./temp:/app/temp
+    depends_on:
+      - db
+      - redis
+    networks:
+      - pinad-network
+    restart: unless-stopped
+
+  # Beat de Celery (tareas programadas)
+  celery-beat:
+    build: .
+    container_name: pinad-celery-beat
+    command: celery -A src.tasks.celery_tasks beat --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://pinad_user:pinad_password@db:5432/pinad_db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+      - ./logs:/app/logs
+    depends_on:
+      - db
+      - redis
+    networks:
+      - pinad-network
+    restart: unless-stopped
+
+  # Base de datos PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: pinad-db
+    environment:
+      - POSTGRES_DB=pinad_db
+      - POSTGRES_USER=pinad_user
+      - POSTGRES_PASSWORD=pinad_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - pinad-network
+    restart: unless-stopped
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: pinad-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - pinad-network
+    restart: unless-stopped
+
+  # Prometheus (monitoreo)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: pinad-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - pinad-network
+    restart: unless-stopped
+
+  # Grafana (visualización de métricas)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: pinad-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - pinad-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  pinad-network:
+    driver: bridge
