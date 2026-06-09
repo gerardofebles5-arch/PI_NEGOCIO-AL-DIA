@@ -8,7 +8,6 @@ import sys
 import os
 import logging
 import datetime
-import numpy as np
 from typing import Dict, Any, Optional
 from dotenv import load_dotenv
 
