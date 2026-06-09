@@ -1,10 +1,11 @@
+import hashlib
+import hmac
+import secrets
 from datetime import datetime, timedelta, timezone
 
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from google.auth.transport import requests as google_requests
-from google.oauth2 import id_token as google_id_token
 from sqlalchemy.orm import Session
 
 from .config import get_settings
@@ -14,7 +15,41 @@ from .models import User
 settings = get_settings()
 bearer_scheme = HTTPBearer(auto_error=False)
 
+# --- Password hashing (PBKDF2-HMAC-SHA256, sin dependencias externas) -------
+_PBKDF2_ROUNDS = 200_000
 
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_bytes(16)
+    dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, _PBKDF2_ROUNDS)
+    return f"pbkdf2_sha256${_PBKDF2_ROUNDS}${salt.hex()}${dk.hex()}"
+
+
+def verify_password(password: str, stored: str) -> bool:
+    try:
+        algo, rounds, salt_hex, hash_hex = stored.split("$")
+        if algo != "pbkdf2_sha256":
+            return False
+        dk = hashlib.pbkdf2_hmac(
+            "sha256", password.encode("utf-8"), bytes.fromhex(salt_hex), int(rounds)
+        )
+    except (ValueError, AttributeError):
+        return False
+    return hmac.compare_digest(dk.hex(), hash_hex)
+
+
+# --- Verification codes -----------------------------------------------------
+def new_verification_code() -> str:
+    return f"{secrets.randbelow(1_000_000):06d}"
+
+
+def verification_expiry() -> datetime:
+    return datetime.now(timezone.utc) + timedelta(
+        minutes=settings.verification_code_ttl_minutes
+    )
+
+
+# --- Sessions / roles -------------------------------------------------------
 def create_session_token(user: User) -> str:
     now = datetime.now(timezone.utc)
     payload = {
@@ -27,61 +62,8 @@ def create_session_token(user: User) -> str:
     return jwt.encode(payload, settings.jwt_secret, algorithm="HS256")
 
 
-def verify_google_credential(credential: str) -> dict:
-    """Verify a Google Identity Services ID token and return its claims."""
-    if not settings.google_client_id:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Google login no esta configurado (falta GOOGLE_CLIENT_ID).",
-        )
-    try:
-        claims = google_id_token.verify_oauth2_token(
-            credential,
-            google_requests.Request(),
-            settings.google_client_id,
-        )
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token de Google invalido: {exc}",
-        ) from exc
-    if not claims.get("email_verified", False):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="El correo de Google no esta verificado.",
-        )
-    return claims
-
-
 def role_for_email(email: str) -> str:
     return "admin" if email.lower() in settings.admin_email_set else "user"
-
-
-def upsert_user(
-    db: Session,
-    *,
-    email: str,
-    name: str = "",
-    picture: str = "",
-    google_sub: str | None = None,
-) -> User:
-    email = email.lower()
-    user = db.query(User).filter(User.email == email).first()
-    if user is None:
-        user = User(email=email, name=name, picture=picture, google_sub=google_sub)
-        db.add(user)
-    else:
-        if name:
-            user.name = name
-        if picture:
-            user.picture = picture
-        if google_sub:
-            user.google_sub = google_sub
-    # Admin role is always derived from the configured admin list.
-    user.role = role_for_email(email)
-    db.commit()
-    db.refresh(user)
-    return user
 
 
 def get_current_user(

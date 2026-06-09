@@ -2,8 +2,8 @@ export interface User {
   id: number;
   email: string;
   name: string;
-  picture: string;
   role: "admin" | "user";
+  is_verified: boolean;
   created_at: string;
   document_count?: number;
 }
@@ -53,10 +53,10 @@ export interface Dashboard {
   top_keywords: [string, number][];
 }
 
-export interface AuthConfig {
-  google_client_id: string;
-  google_enabled: boolean;
-  dev_login_enabled: boolean;
+export interface RegisterResult {
+  email: string;
+  email_sent: boolean;
+  message: string;
 }
 
 const TOKEN_KEY = "pinad_token";
@@ -91,18 +91,29 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
-  authConfig: () => request<AuthConfig>("/api/auth/config"),
-  googleLogin: (credential: string) =>
-    request<{ token: string; user: User }>("/api/auth/google", {
+  register: (email: string, password: string, name: string) =>
+    request<RegisterResult>("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ credential }),
+      body: JSON.stringify({ email, password, name }),
     }),
-  devLogin: (email: string, name?: string) =>
-    request<{ token: string; user: User }>("/api/auth/dev", {
+  verify: (email: string, code: string) =>
+    request<{ token: string; user: User }>("/api/auth/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, name }),
+      body: JSON.stringify({ email, code }),
+    }),
+  login: (email: string, password: string) =>
+    request<{ token: string; user: User }>("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    }),
+  resend: (email: string) =>
+    request<RegisterResult>("/api/auth/resend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
     }),
   me: () => request<User>("/api/auth/me"),
   dashboard: () => request<Dashboard>("/api/dashboard"),

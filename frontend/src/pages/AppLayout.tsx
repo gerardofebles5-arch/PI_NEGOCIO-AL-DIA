@@ -51,17 +51,9 @@ export function AppLayout() {
                 {user?.role === "admin" ? "Administrador" : "Usuario"}
               </div>
             </div>
-            {user?.picture ? (
-              <img
-                src={user.picture}
-                alt=""
-                className="h-9 w-9 rounded-full border border-pi-gold-deep/30 object-cover"
-              />
-            ) : (
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-pi-ink text-sm font-medium text-pi-cream">
-                {(user?.name || user?.email || "?").charAt(0).toUpperCase()}
-              </div>
-            )}
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-pi-ink text-sm font-medium text-pi-cream">
+              {(user?.name || user?.email || "?").charAt(0).toUpperCase()}
+            </div>
             <button
               onClick={logout}
               className="hidden rounded-lg border border-pi-gold-deep/30 px-3 py-1.5 text-sm text-pi-ink-soft transition hover:bg-pi-cream/60 sm:block"

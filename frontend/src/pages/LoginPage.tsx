@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-import { api, type AuthConfig } from "../api";
+import { useState } from "react";
+import { api } from "../api";
 import { useAuth } from "../auth";
-import { Logo } from "../components/Logo";
-import { GoogleSignIn } from "../components/GoogleSignIn";
+import logoFull from "../assets/logo-full.png";
+import logoPiNad from "../assets/logo-pinad.png";
 
 const FEATURES = [
   ["Escanea", "Sube fotos, PDF, Word, Excel o presentaciones — o usa la cámara de tu teléfono."],
@@ -10,33 +10,69 @@ const FEATURES = [
   ["Decide", "Tu dashboard inteligente resume todo y te muestra lo importante."],
 ];
 
+type Mode = "login" | "register" | "verify";
+
 export function LoginPage() {
   const { login } = useAuth();
-  const [config, setConfig] = useState<AuthConfig | null>(null);
+  const [mode, setMode] = useState<Mode>("login");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
   const [error, setError] = useState("");
-  const [devEmail, setDevEmail] = useState("");
+  const [info, setInfo] = useState("");
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    api.authConfig().then(setConfig).catch(() => setConfig(null));
-  }, []);
-
-  const handleGoogle = async (credential: string) => {
+  const reset = (next: Mode) => {
+    setMode(next);
     setError("");
+    setInfo("");
+    setCode("");
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setInfo("");
+    setBusy(true);
     try {
-      const { token, user } = await api.googleLogin(credential);
+      const { token, user } = await api.login(email.trim(), password);
       login(token, user);
-    } catch (e) {
-      setError((e as Error).message);
+    } catch (err) {
+      const msg = (err as Error).message;
+      setError(msg);
+      // El backend devuelve 403 y reenvía un código cuando falta verificar.
+      if (msg.toLowerCase().includes("verificar")) {
+        setInfo("Te enviamos un código a tu correo. Ingrésalo abajo.");
+        setMode("verify");
+      }
+    } finally {
+      setBusy(false);
     }
   };
 
-  const handleDev = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setInfo("");
+    setBusy(true);
+    try {
+      const res = await api.register(email.trim(), password, name.trim());
+      setInfo(res.message);
+      setMode("verify");
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setBusy(true);
     try {
-      const { token, user } = await api.devLogin(devEmail.trim());
+      const { token, user } = await api.verify(email.trim(), code.trim());
       login(token, user);
     } catch (err) {
       setError((err as Error).message);
@@ -45,11 +81,32 @@ export function LoginPage() {
     }
   };
 
+  const handleResend = async () => {
+    setError("");
+    setInfo("");
+    setBusy(true);
+    try {
+      const res = await api.resend(email.trim());
+      setInfo(res.message);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const inputClass =
+    "w-full rounded-lg border border-pi-gold-deep/30 bg-white px-3 py-2.5 text-sm outline-none focus:border-pi-gold focus:ring-2 focus:ring-pi-gold/30";
+  const primaryBtn =
+    "w-full rounded-lg bg-pi-gold px-4 py-2.5 text-sm font-medium text-white transition hover:bg-pi-gold-deep disabled:opacity-60";
+
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-2">
       {/* Hero / brand */}
       <div className="relative flex flex-col justify-between bg-pi-ink p-8 text-pi-cream lg:p-14">
-        <Logo size={48} />
+        <div className="inline-flex w-fit rounded-xl bg-white px-4 py-3 shadow-lg">
+          <img src={logoFull} alt="(π)NAD" className="h-12 w-auto" />
+        </div>
         <div className="py-12">
           <h1 className="font-display text-5xl leading-[0.95] text-pi-cream sm:text-6xl">
             Tu información,
@@ -75,60 +132,169 @@ export function LoginPage() {
           </ul>
         </div>
         <div className="text-xs text-pi-cream/50">
-          100% gratuito · Datos cifrados por sesión
+          100% gratuito · Verificación por correo · Datos cifrados por sesión
         </div>
       </div>
 
       {/* Auth card */}
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm">
-          <h2 className="font-display text-3xl text-pi-ink">Inicia sesión</h2>
-          <p className="mt-1 text-sm text-pi-ink-soft">
-            Accede con tu cuenta de Google para empezar.
-          </p>
+          <img src={logoPiNad} alt="(π)NAD" className="mb-6 h-10 w-auto lg:hidden" />
+
+          {mode !== "verify" && (
+            <div className="mb-6 inline-flex rounded-lg border border-pi-gold-deep/20 bg-pi-cream/40 p-1 text-sm">
+              <button
+                type="button"
+                onClick={() => reset("login")}
+                className={`rounded-md px-4 py-1.5 font-medium transition ${
+                  mode === "login" ? "bg-pi-gold text-white" : "text-pi-ink-soft"
+                }`}
+              >
+                Iniciar sesión
+              </button>
+              <button
+                type="button"
+                onClick={() => reset("register")}
+                className={`rounded-md px-4 py-1.5 font-medium transition ${
+                  mode === "register" ? "bg-pi-gold text-white" : "text-pi-ink-soft"
+                }`}
+              >
+                Crear cuenta
+              </button>
+            </div>
+          )}
+
+          {mode === "login" && (
+            <>
+              <h2 className="font-display text-3xl text-pi-ink">Bienvenido de vuelta</h2>
+              <p className="mt-1 text-sm text-pi-ink-soft">
+                Ingresa con tu correo y contraseña.
+              </p>
+            </>
+          )}
+          {mode === "register" && (
+            <>
+              <h2 className="font-display text-3xl text-pi-ink">Crea tu cuenta</h2>
+              <p className="mt-1 text-sm text-pi-ink-soft">
+                Te enviaremos un código de verificación a tu correo.
+              </p>
+            </>
+          )}
+          {mode === "verify" && (
+            <>
+              <h2 className="font-display text-3xl text-pi-ink">Verifica tu correo</h2>
+              <p className="mt-1 text-sm text-pi-ink-soft">
+                Escribe el código de 6 dígitos que enviamos a{" "}
+                <span className="font-medium text-pi-ink">{email}</span>.
+              </p>
+            </>
+          )}
 
           {error && (
             <div className="mt-4 rounded-lg border border-pi-brown/30 bg-pi-brown/10 px-3 py-2 text-sm text-pi-brown">
               {error}
             </div>
           )}
+          {info && (
+            <div className="mt-4 rounded-lg border border-pi-gold-deep/30 bg-pi-cream/50 px-3 py-2 text-sm text-pi-ink-soft">
+              {info}
+            </div>
+          )}
 
-          <div className="mt-6 space-y-4">
-            {config?.google_enabled && config.google_client_id ? (
-              <GoogleSignIn
-                clientId={config.google_client_id}
-                onCredential={handleGoogle}
+          {mode === "login" && (
+            <form onSubmit={handleLogin} className="mt-6 space-y-3">
+              <input
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tucorreo@gmail.com"
+                className={inputClass}
               />
-            ) : (
-              <div className="rounded-lg border border-pi-gold-deep/30 bg-pi-cream/40 px-4 py-3 text-sm text-pi-ink-soft">
-                El acceso con Google se activará en cuanto se configure el
-                <span className="font-medium"> Client ID</span>.
-              </div>
-            )}
+              <input
+                type="password"
+                required
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Contraseña"
+                className={inputClass}
+              />
+              <button type="submit" disabled={busy} className={primaryBtn}>
+                {busy ? "Entrando…" : "Entrar"}
+              </button>
+            </form>
+          )}
 
-            {config?.dev_login_enabled && (
-              <form onSubmit={handleDev} className="space-y-3 border-t border-pi-gold-deep/20 pt-5">
-                <div className="text-xs font-medium uppercase tracking-wider text-pi-gold-deep">
-                  Acceso de prueba
-                </div>
-                <input
-                  type="email"
-                  required
-                  value={devEmail}
-                  onChange={(e) => setDevEmail(e.target.value)}
-                  placeholder="tucorreo@gmail.com"
-                  className="w-full rounded-lg border border-pi-gold-deep/30 bg-white px-3 py-2.5 text-sm outline-none focus:border-pi-gold focus:ring-2 focus:ring-pi-gold/30"
-                />
+          {mode === "register" && (
+            <form onSubmit={handleRegister} className="mt-6 space-y-3">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Tu nombre (opcional)"
+                className={inputClass}
+              />
+              <input
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tucorreo@gmail.com"
+                className={inputClass}
+              />
+              <input
+                type="password"
+                required
+                minLength={8}
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Contraseña (mínimo 8 caracteres)"
+                className={inputClass}
+              />
+              <button type="submit" disabled={busy} className={primaryBtn}>
+                {busy ? "Creando…" : "Crear cuenta"}
+              </button>
+            </form>
+          )}
+
+          {mode === "verify" && (
+            <form onSubmit={handleVerify} className="mt-6 space-y-3">
+              <input
+                type="text"
+                inputMode="numeric"
+                required
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="000000"
+                maxLength={6}
+                className={`${inputClass} text-center text-2xl tracking-[0.5em]`}
+              />
+              <button type="submit" disabled={busy} className={primaryBtn}>
+                {busy ? "Verificando…" : "Verificar y entrar"}
+              </button>
+              <div className="flex items-center justify-between pt-1 text-sm">
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleResend}
                   disabled={busy}
-                  className="w-full rounded-lg bg-pi-gold px-4 py-2.5 text-sm font-medium text-white transition hover:bg-pi-gold-deep disabled:opacity-60"
+                  className="text-pi-gold-deep hover:underline disabled:opacity-60"
                 >
-                  {busy ? "Entrando…" : "Entrar"}
+                  Reenviar código
                 </button>
-              </form>
-            )}
-          </div>
+                <button
+                  type="button"
+                  onClick={() => reset("login")}
+                  className="text-pi-ink-soft hover:underline"
+                >
+                  Volver
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </div>

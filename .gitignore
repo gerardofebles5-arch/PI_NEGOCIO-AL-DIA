@@ -21,6 +21,10 @@ node_modules/
 frontend/dist/
 backend/static/
 
+# Local testing artifacts (no se versionan)
+TEST_PLAN.md
+test-report.md
+
 # Editor / OS
 .DS_Store
 .idea/

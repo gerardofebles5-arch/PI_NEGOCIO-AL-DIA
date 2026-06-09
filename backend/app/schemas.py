@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserOut(BaseModel):
@@ -9,8 +9,8 @@ class UserOut(BaseModel):
     id: int
     email: str
     name: str
-    picture: str
     role: str
+    is_verified: bool
     created_at: datetime
 
 
@@ -19,13 +19,30 @@ class AuthResponse(BaseModel):
     user: UserOut
 
 
-class GoogleLoginIn(BaseModel):
-    credential: str  # Google ID token (JWT) from Google Identity Services
-
-
-class DevLoginIn(BaseModel):
-    email: str
+class RegisterIn(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
     name: str = ""
+
+
+class LoginIn(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class VerifyIn(BaseModel):
+    email: EmailStr
+    code: str = Field(min_length=4, max_length=12)
+
+
+class ResendIn(BaseModel):
+    email: EmailStr
+
+
+class RegisterOut(BaseModel):
+    email: str
+    email_sent: bool
+    message: str
 
 
 class ExtractionOut(BaseModel):
