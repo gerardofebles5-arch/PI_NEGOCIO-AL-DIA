@@ -1,52 +1,32 @@
-# Dockerfile para (π)NAD V6.0 - Google Native Architecture
-# Mejoras FASE_4: Optimizado para Cloud Run con CI/CD
+# ---------- Stage 1: build the frontend ----------
+FROM node:20-slim AS frontend
+WORKDIR /frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
 
-FROM python:3.11-slim
-
-# Establecer directorio de trabajo
+# ---------- Stage 2: backend + static ----------
+FROM python:3.12-slim AS runtime
 WORKDIR /app
 
-# Instalar dependencias del sistema
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    libpq-dev \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libgomp1 \
-    curl \
+# System deps: Tesseract (OCR, español + inglés) for images and scanned PDFs.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr \
+    tesseract-ocr-spa \
+    tesseract-ocr-eng \
     && rm -rf /var/lib/apt/lists/*
 
-# Copiar requirements
-COPY requirements.txt .
-
-# Instalar dependencias de Python
+COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar código de la aplicación
-COPY . .
+COPY backend/ ./
+# Built SPA served by FastAPI from backend/static.
+COPY --from=frontend /frontend/dist ./static
 
-# Crear directorios necesarios
-RUN mkdir -p logs uploads temp exports data
+ENV DATABASE_URL=sqlite:////app/data/pinad.db \
+    UPLOAD_DIR=/app/data/uploads \
+    PORT=8000
 
-# Configurar usuario no-root para seguridad
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
-USER appuser
-
-# Exponer puertos
-EXPOSE 5000 5001
-
-# Variables de entorno
-ENV PYTHONUNBUFFERED=1
-ENV FLASK_APP=main.py
-ENV FLASK_ENV=production
-ENV PORT=8080
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/api/v1/health || exit 1
-
-# Comando de inicio optimizado para Cloud Run
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "--threads", "4", "--timeout", "300", "--access-logfile", "-", "--error-logfile", "-", "--log-level", "info", "main:app"]
+EXPOSE 8000
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
