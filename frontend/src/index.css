@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+/* ===== Identidad visual Pi NAD ===== */
+@theme {
+  --color-pi-gold: #be882e;
+  --color-pi-gold-deep: #936a31;
+  --color-pi-gold-light: #d9b158;
+  --color-pi-cream: #f4e0ab;
+  --color-pi-cream-soft: #ffd194;
+  --color-pi-brown: #873c20;
+  --color-pi-brown-mid: #ac7649;
+  --color-pi-brown-deep: #512509;
+  --color-pi-ink: #292b2a;
+  --color-pi-ink-soft: #3e403d;
+
+  --font-display: "League Gothic", "Poppins", sans-serif;
+  --font-sans: "Poppins", system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 300;
+  color: var(--color-pi-ink);
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(244, 224, 171, 0.45), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(217, 177, 88, 0.35), transparent 55%),
+    #fbf7ef;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+/* Thin scrollbar for the data panels */
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: rgba(147, 106, 49, 0.4);
+  border-radius: 999px;
+}

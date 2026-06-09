@@ -1,75 +1,32 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual Environment
-venv/
-ENV/
-env/
 .venv/
+venv/
+.pytest_cache/
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-logs/
-*.log
-
-# Data
+# Data / uploads / db
 data/
 *.db
-*.sqlite
 *.sqlite3
 
-# Cache
-ocr_cache/
-*.pkl
-*.pth
-
-# Environment
+# Env
 .env
-.env.local
+.env.*
+!.env.example
 
-# Build
-build/
-dist/
-*.spec
+# Node / frontend
+node_modules/
+frontend/dist/
+backend/static/
 
-# Temporary files
-*.tmp
-*.bak
-*.cache
+# Local testing artifacts (no se versionan)
+TEST_PLAN.md
+test-report.md
 
-# OCR models cache
-ocr_cache/
-easyocr_model.pkl
-
-# Large files
-flutter.zip
-*.zip
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.log
