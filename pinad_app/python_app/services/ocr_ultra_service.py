@@ -153,7 +153,7 @@ class OCRUltraService:
         return validated_item
     
     def process_document_ultra(self, file_bytes: bytes, file_name: str) -> Dict[str, Any]:
-        """Procesar documento con OCR Ultra - Función completa con fallback"""
+        """Procesar documento con OCR Ultra - Solo OCR real"""
         print(f"🔄 Iniciando procesamiento OCR Ultra para: {file_name}")
         
         # Intentar 1: Edge Function OCR Ultra
@@ -164,7 +164,7 @@ class OCRUltraService:
                 # Validar y corregir datos
                 result = self.validate_extracted_data(result)
                 # Detectar tipo de documento
-                result['document_type'] = self.detect_document_type(file_name, result.get('text', ''))
+                result['document_type'] = self.detect_document_type(file_name, result.get('raw_text', ''))
                 return result
         except Exception as e:
             print(f"⚠️ Error en Edge Function OCR: {e}")
@@ -179,19 +179,17 @@ class OCRUltraService:
                     # Validar y corregir datos
                     result = self.validate_extracted_data(result)
                     # Detectar tipo de documento
-                    result['document_type'] = self.detect_document_type(file_name, result.get('text', ''))
+                    result['document_type'] = self.detect_document_type(file_name, result.get('raw_text', ''))
                     return result
             except Exception as e:
                 print(f"⚠️ Error en OCR local: {e}")
         
-        # Intentar 3: OCR Simulado (último fallback)
-        print("🔄 Usando OCR simulado como último fallback...")
-        result = self._get_simulated_ocr_result(file_name)
-        # Validar y corregir datos
-        result = self.validate_extracted_data(result)
-        # Detectar tipo de documento
-        result['document_type'] = self.detect_document_type(file_name, result.get('text', ''))
-        return result
+        # Error si no hay OCR disponible
+        print("❌ OCR no disponible - Error crítico")
+        return {
+            "success": False,
+            "error": "OCR no disponible - Por favor, configure el servicio OCR correctamente"
+        }
     
     def _try_edge_function_ocr(self, file_bytes: bytes, file_name: str) -> Dict[str, Any]:
         """Intentar OCR Ultra Edge Function"""
@@ -536,7 +534,7 @@ Datos extraídos exitosamente mediante sistema OCR local."""
             "raw_text": "",
             "language": "es",
             "processing_time": 0.0,
-            "error": "OCR Ultra no disponible - usando modo manual"
+            "error": "OCR Ultra no disponible - Por favor, configure el servicio OCR correctamente"
         }
     
     def extract_invoice_data_ultra(self, file_bytes: bytes, file_name: str) -> Dict[str, Any]:

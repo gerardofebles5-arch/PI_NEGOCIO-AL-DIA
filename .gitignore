@@ -69,3 +69,7 @@ dist/
 # OCR models cache
 ocr_cache/
 easyocr_model.pkl
+
+# Large files
+flutter.zip
+*.zip
